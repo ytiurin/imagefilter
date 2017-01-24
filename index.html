@@ -1,0 +1,190 @@
+<!DOCTYPE html><html><head>
+
+  <meta charset='utf-8'>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Convolution Matrix filter</title>
+
+  <link rel="mask-icon" href="https://assets-cdn.github.com/pinned-octocat.svg" color="#000000">
+  <link rel="icon" type="image/x-icon" href="https://assets-cdn.github.com/favicon.ico">
+
+  <style>
+    body {
+      font-family: serif;
+      font-size: 1em;
+    }
+    #settings {
+      background-color: white;
+      margin-top: -200px;
+      padding: 8px 10px 12px;
+      position: absolute;
+      right: 20px;
+      top: 50%;
+    }
+    input, select, button {
+      margin: 4px 1px;
+    }
+    input[type=number] {
+      width: 48px;
+    }
+  </style>
+
+  <script type="text/javascript" src="apply-filter.js"></script>
+
+</head><body>
+
+  <canvas id="canvas"></canvas>
+
+  <div id="settings">
+    <fieldset>
+      <legend>Filter</legend>
+      <select id="filters" onchange="setPresetFilter( this.value )">
+        <option value="identity">Identity</option>
+        <option value="blur">Box blur</option>
+        <option value="gaussian">Gaussian blur</option>
+        <option value="sharpen">Sharpen</option>
+        <option value="edgeDetect">Edge detect</option>
+        <option value="unsharp">Unsharp mask</option>
+        <option value="emboss">Emboss</option>
+      </select>
+      <a href="https://docs.gimp.org/en/plug-in-convmatrix.html" target="_blank">Algorithm details</a>
+      <br/>
+      <br/>
+      <input id="a01" type="number" value="0" />
+      <input id="a00" type="number" value="0" />
+      <input id="a02" type="number" value="0" />
+      <input id="a03" type="number" value="0" />
+      <input id="a04" type="number" value="0" />
+      <br/>
+      <input id="a10" type="number" value="0" />
+      <input id="a11" type="number" value="0" />
+      <input id="a12" type="number" value="0" />
+      <input id="a13" type="number" value="0" />
+      <input id="a14" type="number" value="0" />
+      <br/>
+      <input id="a20" type="number" value="0" />
+      <input id="a21" type="number" value="0" />
+      <input id="a22" type="number" value="0" />
+      <input id="a23" type="number" value="0" />
+      <input id="a24" type="number" value="0" />
+      <br/>
+      <input id="a30" type="number" value="0" />
+      <input id="a31" type="number" value="0" />
+      <input id="a32" type="number" value="0" />
+      <input id="a33" type="number" value="0" />
+      <input id="a34" type="number" value="0" />
+      <br/>
+      <input id="a40" type="number" value="0" />
+      <input id="a41" type="number" value="0" />
+      <input id="a42" type="number" value="0" />
+      <input id="a43" type="number" value="0" />
+      <input id="a44" type="number" value="0" />
+      <br/>
+      <br/>
+
+      <button onclick="reset()">Reset</button>
+      <button id="apply" onclick="setCustomFilter()">Apply</button>
+    </fieldset>
+  </div>
+
+  <script type="text/javascript">
+    // FILTERS
+    var filters = {
+      // BOX BLUR
+      blur: [ [1,1,1,1,1], [1,1,1,1,1], [1,1,1,1,1], [1,1,1,1,1], [1,1,1,1,1] ]
+        .map( function( a ) {
+          return a.map( function( d ) {
+            return d / 25  }) }),
+      // EDGE DETECT
+      edgeDetect: [ [ -1, -1, -1 ], [ -1, 8, -1 ], [ -1, -1, -1 ] ],
+      // EMBOSS
+      emboss: [ [ -2, -1, 0 ], [ -1, 1, 1 ], [ 0, 1, 2 ] ],
+      // GAUSSIAN BLUR
+      gaussian: [ [ 1, 4, 6, 4, 1 ], [ 4, 16, 24, 16, 4 ], [ 6, 24, 36, 24, 6], [ 4, 16, 24, 16, 4 ], [ 1, 4, 6, 4, 1 ] ]
+        .map( function( a ) {
+          return a.map( function( d ) {
+            return d / 256  }) }),
+      // IDENTITY
+      identity: [ [ 1 ] ],
+      // SHARPEN
+      sharpen: [ [ 0, -1, 0 ], [ -1, 5, -1 ], [ 0, -1, 0 ] ],
+      // UNSHARP MASK
+      unsharp: [ [ 1, 4, 6, 4, 1 ], [ 4, 16, 24, 16, 4 ], [ 6, 24, -476, 24, 6], [ 4, 16, 24, 16, 4 ], [ 1, 4, 6, 4, 1 ] ]
+        .map( function( a ) {
+          return a.map( function( d ) {
+            return -1 * d / 256  }) })
+    }
+
+    function drawImage( filter, cb )
+    {
+      canvas.width = img.width
+      canvas.height = img.height
+      context.drawImage( img, 0, 0 )
+
+      var imageData = context.getImageData( 0, 0, img.width, img.height )
+
+      setTimeout( function() {
+        var start = new Date
+        imageData = applyFilter( imageData, filter )
+        console.log("FILTER TIME", ((new Date) - start ) / 1000 + "s" )
+        context.putImageData( imageData, 0, 0 )
+        cb()
+      })
+    }
+
+    function setFilter( filter )
+    {
+      byId( "filters").setAttribute( "disabled", "1" )
+      byId( "apply").setAttribute( "disabled", "1" )
+
+      drawImage( filter, function() {
+        byId( "filters").removeAttribute( "disabled" )
+        byId( "apply").removeAttribute( "disabled" )
+      })
+    }
+
+    function setPresetFilter( filterName )
+    {
+      var filter = filters[ filterName ]
+      setFilter( filter )
+
+      var i0 = ( 5 - filter.length ) / 2
+
+      for ( var i = 0; i < 5; i++ )
+        for ( var j = 0; j < 5; j++ ) {
+          var v = 0
+          if ( filter[ i - i0 ] && filter[ i - i0 ][ j - i0 ] )
+            v = filter[ i - i0 ][ j - i0 ]
+          byId( "a" + i + j ).value = v
+        }
+    }
+
+    function setCustomFilter()
+    {
+      var filter = []
+
+      for ( var i = 0; i < 5; i++ )
+        for ( var j = 0; j < 5; j++ ) {
+          filter[i] = filter[i] || []
+          filter[i][j] = +byId( "a" + i + j ).value
+        }
+
+      setFilter( filter )
+    }
+
+    function reset()
+    {
+      setPresetFilter( byId( "filters").value )
+    }
+
+    var byId = function( id ) { return document.getElementById( id ) }
+    var canvas = byId("canvas")
+    var context = canvas.getContext("2d")
+
+    var img = document.createElement("img")
+    img.onload = function() { setPresetFilter( "identity" ) }
+    img.src = "library.jpg"
+
+  </script>
+
+</body></html>
