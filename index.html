@@ -27,6 +27,9 @@
     input[type=number] {
       width: 48px;
     }
+    .rightify {
+      text-align: right;
+    }
   </style>
 
   <script type="text/javascript" src="apply-filter.js"></script>
@@ -47,7 +50,6 @@
         <option value="unsharp">Unsharp mask</option>
         <option value="emboss">Emboss</option>
       </select>
-      <a href="https://docs.gimp.org/en/plug-in-convmatrix.html" target="_blank">Algorithm details</a>
       <br/>
       <br/>
       <input id="a01" type="number" value="0" />
@@ -81,10 +83,16 @@
       <input id="a44" type="number" value="0" />
       <br/>
       <br/>
-
-      <button onclick="reset()">Reset</button>
-      <button id="apply" onclick="setCustomFilter()">Apply</button>
+      <div class="rightify">
+        <button onclick="reset()">Reset</button>
+        <button id="apply" onclick="setCustomFilter()">Apply</button>
+      </div>
     </fieldset>
+    <br/>
+    <div class="rightify">
+      <a href="https://docs.gimp.org/en/plug-in-convmatrix.html" target="_blank">Algorithm description</a><br/>
+      <a href="https://github.com/ytiurin/imagefilter" target="_blank">Fork on Github</a>
+    </div>
   </div>
 
   <script type="text/javascript">
